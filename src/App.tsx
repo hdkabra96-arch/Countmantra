@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { RotateCcw, Settings, History, Moon, Sun, Volume2, Vibrate, Lightbulb } from 'lucide-react';
+import { RotateCcw, Settings, History, Moon, Sun, Volume2, Vibrate, Lightbulb, Image as ImageIcon } from 'lucide-react';
 
 // Types
 type Theme = 'teal' | 'silver' | 'black' | 'gold';
@@ -15,6 +15,10 @@ interface HistoryItem {
   count: number;
   timestamp: number;
 }
+
+const defaultBackgrounds = [
+  { id: 'none', url: '', name: 'None' },
+];
 
 export default function App() {
   // State
@@ -28,6 +32,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [theme, setTheme] = useState<Theme>('teal');
   const [isBacklightOn, setIsBacklightOn] = useState<boolean>(false);
+  const [background, setBackground] = useState<string>('');
 
   // Load data from localStorage
   useEffect(() => {
@@ -43,6 +48,7 @@ export default function App() {
       setSoundEnabled(settings.soundEnabled ?? true);
       setVibrationEnabled(settings.vibrationEnabled ?? true);
       setTheme(settings.theme ?? 'teal');
+      setBackground(settings.background ?? '');
     }
   }, []);
 
@@ -60,9 +66,10 @@ export default function App() {
       isDarkMode,
       soundEnabled,
       vibrationEnabled,
-      theme
+      theme,
+      background
     }));
-  }, [isDarkMode, soundEnabled, vibrationEnabled, theme]);
+  }, [isDarkMode, soundEnabled, vibrationEnabled, theme, background]);
 
   // Handlers
   const playClickSound = useCallback(() => {
@@ -211,8 +218,19 @@ export default function App() {
   const currentTheme = deviceThemes[theme];
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-zinc-950' : 'bg-zinc-100'} transition-colors duration-500 flex flex-col items-center justify-center p-4 font-sans overflow-hidden`}>
+    <div className={`min-h-screen ${!background ? (isDarkMode ? 'bg-zinc-950' : 'bg-zinc-100') : 'bg-black'} transition-colors duration-500 flex flex-col items-center justify-center p-4 font-sans overflow-hidden relative`}>
       
+      {/* Background Image Layer */}
+      {background && (
+        <div 
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
+          style={{ backgroundImage: `url(${background})` }}
+        >
+          {/* Overlay to ensure readability */}
+          <div className={`absolute inset-0 ${isDarkMode ? 'bg-black/70' : 'bg-white/50'} backdrop-blur-[2px]`}></div>
+        </div>
+      )}
+
       {/* Top Navigation Bar */}
       <div className="fixed top-0 left-0 right-0 p-6 flex justify-between items-center max-w-2xl mx-auto w-full z-10">
         <motion.button
@@ -399,6 +417,48 @@ export default function App() {
                         }`}
                       />
                     ))}
+                  </div>
+                </div>
+
+                {/* Background Selection */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold uppercase tracking-widest opacity-50">Background</label>
+                  <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                    {defaultBackgrounds.map(bg => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setBackground(bg.url)}
+                        className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${background === bg.url ? 'border-teal-500 scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                      >
+                        {bg.url ? (
+                          <img src={bg.url} alt={bg.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className={`w-full h-full flex items-center justify-center ${isDarkMode ? 'bg-zinc-800' : 'bg-zinc-200'}`}>
+                            <span className="text-[10px] font-bold uppercase">None</span>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                    {/* Custom Upload Button */}
+                    <label className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 border-dashed border-zinc-500 flex flex-col items-center justify-center cursor-pointer hover:bg-zinc-500/10 transition-colors`}>
+                      <ImageIcon size={16} className="opacity-50 mb-1" />
+                      <span className="text-[8px] font-bold uppercase opacity-50">Upload</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setBackground(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
                   </div>
                 </div>
 
