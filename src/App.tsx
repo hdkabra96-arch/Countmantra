@@ -95,6 +95,44 @@ export default function App() {
     }
   }, [soundEnabled]);
 
+  const playGoalSound = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      
+      const audioCtx = new AudioContextClass();
+      
+      const playNote = (freq: number, startTime: number, duration: number) => {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, startTime);
+        
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
+
+      const now = audioCtx.currentTime;
+      // Play a pleasant ascending chime (C5, E5, G5)
+      playNote(523.25, now, 0.2);       
+      playNote(659.25, now + 0.15, 0.2); 
+      playNote(783.99, now + 0.3, 0.4);  
+      
+      setTimeout(() => audioCtx.close(), 1000);
+    } catch (e) {
+      console.error('Audio error:', e);
+    }
+  }, [soundEnabled]);
+
   const handleIncrement = useCallback(() => {
     if (goal > 0 && count >= goal) {
       // Optional: Add a subtle "limit reached" vibration
@@ -104,21 +142,21 @@ export default function App() {
       return;
     }
 
-    setCount(prev => prev + 1);
+    const newCount = count + 1;
+    setCount(newCount);
     
-    // Feedback
-    if (vibrationEnabled && navigator.vibrate) {
-      navigator.vibrate(40);
-    }
-    
-    playClickSound();
-
-    if (count + 1 === goal) {
+    if (goal > 0 && newCount === goal) {
       if (vibrationEnabled && navigator.vibrate) {
         navigator.vibrate([100, 50, 100]);
       }
+      playGoalSound();
+    } else {
+      if (vibrationEnabled && navigator.vibrate) {
+        navigator.vibrate(40);
+      }
+      playClickSound();
     }
-  }, [count, goal, vibrationEnabled, playClickSound]);
+  }, [count, goal, vibrationEnabled, playClickSound, playGoalSound]);
 
   const handleReset = () => {
     if (count > 0) {
