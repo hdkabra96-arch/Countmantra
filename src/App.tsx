@@ -271,26 +271,26 @@ export default function App() {
         <motion.div 
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className={`relative w-[280px] h-[360px] md:w-[320px] md:h-[420px] ${currentTheme.body} rounded-[80px] md:rounded-[100px] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5),inset_0_4px_12px_rgba(255,255,255,0.3),inset_0_-8px_16px_rgba(0,0,0,0.4)] flex flex-col items-center pt-10 md:pt-14 overflow-hidden border-t border-white/20`}
+          className={`relative w-[300px] h-[480px] md:w-[360px] md:h-[560px] ${currentTheme.body} rounded-[80px] md:rounded-[100px] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5),inset_0_4px_12px_rgba(255,255,255,0.3),inset_0_-8px_16px_rgba(0,0,0,0.4)] flex flex-col items-center pt-10 md:pt-14 overflow-hidden border-t border-white/20`}
         >
           {/* Brand Name / Logo */}
-          <div className="text-[10px] md:text-xs font-bold tracking-[0.2em] text-white/40 uppercase mb-4 md:mb-6">
-            Digital Tasbih
+          <div className="text-[10px] md:text-xs font-bold tracking-[0.2em] text-white/40 uppercase mb-4 md:mb-6 shrink-0">
+            Tapasya
           </div>
 
           {/* LCD Screen Container */}
-          <div className="relative w-[80%] h-24 md:h-32 bg-zinc-900 rounded-2xl p-1 shadow-[inset_0_4px_8px_rgba(0,0,0,0.8),0_1px_1px_rgba(255,255,255,0.1)] border border-white/5 overflow-hidden">
+          <div className="relative shrink-0 w-[85%] md:w-[90%] h-28 md:h-36 bg-zinc-900 rounded-2xl p-2 md:p-3 shadow-[inset_0_4px_8px_rgba(0,0,0,0.8),0_1px_1px_rgba(255,255,255,0.1)] border border-white/5">
             {/* LCD Glass Effect */}
-            <div className={`absolute inset-0 transition-colors duration-300 ${isBacklightOn ? 'bg-emerald-400/80 shadow-[inset_0_0_40px_rgba(0,0,0,0.2)]' : 'bg-[#a3b18a]'}`}>
+            <div className={`relative w-full h-full rounded-xl overflow-hidden transition-colors duration-300 ${isBacklightOn ? 'bg-emerald-400/80 shadow-[inset_0_0_40px_rgba(0,0,0,0.2)]' : 'bg-[#a3b18a]'}`}>
               {/* LCD Grid Pattern */}
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '4px 4px' }}></div>
               
               {/* LCD Content */}
-              <div className="h-full flex flex-col items-end justify-center px-4 font-mono">
-                <div className={`text-[10px] md:text-xs font-bold uppercase tracking-tighter transition-colors duration-300 ${isBacklightOn ? 'text-emerald-950/60' : 'text-zinc-800/40'}`}>
-                  Count / Goal: {goal}
+              <div className="absolute inset-0 flex flex-col items-end justify-center px-6 md:px-8 font-mono">
+                <div className={`text-xs md:text-sm font-bold uppercase tracking-tighter transition-colors duration-300 w-full text-right whitespace-nowrap mb-1 ${isBacklightOn ? 'text-emerald-950/60' : 'text-zinc-800/40'}`}>
+                  Count / Goal: {goal.toLocaleString()}
                 </div>
-                <div className={`text-5xl md:text-6xl font-bold tracking-tighter transition-colors duration-300 ${isBacklightOn ? 'text-emerald-950' : 'text-zinc-900'}`}>
+                <div className={`text-6xl md:text-7xl font-bold tracking-tighter leading-none transition-colors duration-300 w-full text-right whitespace-nowrap ${isBacklightOn ? 'text-emerald-950' : 'text-zinc-900'}`}>
                   {count}
                 </div>
               </div>
@@ -555,16 +555,16 @@ export default function App() {
                 ) : (
                   history.map(item => (
                     <div key={item.id} className={`p-4 rounded-2xl ${isDarkMode ? 'bg-zinc-800' : 'bg-zinc-100'} flex justify-between items-center`}>
-                      <div>
-                        <p className="text-2xl font-bold">{item.count}</p>
+                      <div className="overflow-hidden pr-4">
+                        <p className="text-2xl font-bold truncate">{item.count.toLocaleString()}</p>
                         {item.mantraName && (
-                          <p className="text-sm font-medium opacity-80 mb-1">{item.mantraName}</p>
+                          <p className="text-sm font-medium opacity-80 mb-1 truncate">{item.mantraName}</p>
                         )}
-                        <p className="text-[10px] uppercase tracking-widest opacity-40">
+                        <p className="text-[10px] uppercase tracking-widest opacity-40 truncate">
                           {new Date(item.timestamp).toLocaleDateString()} • {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
-                      <div className="w-2 h-2 rounded-full bg-teal-500"></div>
+                      <div className="w-2 h-2 rounded-full bg-teal-500 shrink-0"></div>
                     </div>
                   ))
                 )}
