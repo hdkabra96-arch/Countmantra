@@ -14,6 +14,7 @@ interface HistoryItem {
   id: string;
   count: number;
   timestamp: number;
+  mantraName?: string;
 }
 
 const defaultBackgrounds = [
@@ -33,6 +34,7 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>('teal');
   const [isBacklightOn, setIsBacklightOn] = useState<boolean>(false);
   const [background, setBackground] = useState<string>('');
+  const [mantraName, setMantraName] = useState<string>('');
 
   // Load data from localStorage
   useEffect(() => {
@@ -49,6 +51,7 @@ export default function App() {
       setVibrationEnabled(settings.vibrationEnabled ?? true);
       setTheme(settings.theme ?? 'teal');
       setBackground(settings.background ?? '');
+      setMantraName(settings.mantraName ?? '');
     }
   }, []);
 
@@ -67,9 +70,10 @@ export default function App() {
       soundEnabled,
       vibrationEnabled,
       theme,
-      background
+      background,
+      mantraName
     }));
-  }, [isDarkMode, soundEnabled, vibrationEnabled, theme, background]);
+  }, [isDarkMode, soundEnabled, vibrationEnabled, theme, background, mantraName]);
 
   // Handlers
   const playClickSound = useCallback(() => {
@@ -171,6 +175,7 @@ export default function App() {
         id: Date.now().toString(),
         count: count,
         timestamp: Date.now(),
+        mantraName: mantraName || undefined,
       };
       setHistory(prev => [newItem, ...prev].slice(0, 20));
     }
@@ -402,6 +407,18 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Mantra Setting */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold uppercase tracking-widest opacity-50">Mantra Name</label>
+                  <input
+                    type="text"
+                    value={mantraName}
+                    onChange={(e) => setMantraName(e.target.value)}
+                    className={`w-full py-3 px-4 rounded-xl text-sm font-medium outline-none border-2 transition-all ${isDarkMode ? 'bg-zinc-800 border-zinc-700 text-white focus:border-teal-500' : 'bg-zinc-100 border-zinc-200 text-zinc-900 focus:border-teal-600'}`}
+                    placeholder="Enter mantra name (optional)..."
+                  />
+                </div>
+
                 {/* Theme Selection */}
                 <div className="space-y-3">
                   <label className="text-xs font-bold uppercase tracking-widest opacity-50">Device Color</label>
@@ -540,6 +557,9 @@ export default function App() {
                     <div key={item.id} className={`p-4 rounded-2xl ${isDarkMode ? 'bg-zinc-800' : 'bg-zinc-100'} flex justify-between items-center`}>
                       <div>
                         <p className="text-2xl font-bold">{item.count}</p>
+                        {item.mantraName && (
+                          <p className="text-sm font-medium opacity-80 mb-1">{item.mantraName}</p>
+                        )}
                         <p className="text-[10px] uppercase tracking-widest opacity-40">
                           {new Date(item.timestamp).toLocaleDateString()} • {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
