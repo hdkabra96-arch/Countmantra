@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, Settings, History, Moon, Sun, Volume2, Vibrate, Lightbulb, Image as ImageIcon } from 'lucide-react';
+import { AudioMantra } from './components/AudioMantra';
 
 // Types
 type Theme = 'teal' | 'silver' | 'black' | 'gold';
@@ -31,19 +32,30 @@ export default function App() {
   const [vibrationEnabled, setVibrationEnabled] = useState<boolean>(true);
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showClearHistoryConfirm, setShowClearHistoryConfirm] = useState<boolean>(false);
   const [theme, setTheme] = useState<Theme>('teal');
   const [isBacklightOn, setIsBacklightOn] = useState<boolean>(false);
   const [background, setBackground] = useState<string>('');
   const [mantraName, setMantraName] = useState<string>('');
+  const [hasMantra, setHasMantra] = useState<boolean>(false);
 
   // Load data from localStorage
   useEffect(() => {
     const savedCount = localStorage.getItem('tasbih_count');
     const savedHistory = localStorage.getItem('tasbih_history');
     const savedSettings = localStorage.getItem('tasbih_settings');
+    const savedAudio = localStorage.getItem('mantra_audio');
 
     if (savedCount) setCount(parseInt(savedCount, 10));
     if (savedHistory) setHistory(JSON.parse(savedHistory));
+    if (savedAudio) setHasMantra(true);
+
+    const handleCustom = () => {
+      const audio = localStorage.getItem('mantra_audio');
+      setHasMantra(!!audio);
+    };
+    window.addEventListener('mantra_audio_changed', handleCustom);
+
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       setIsDarkMode(settings.isDarkMode ?? true);
@@ -53,6 +65,10 @@ export default function App() {
       setBackground(settings.background ?? '');
       setMantraName(settings.mantraName ?? '');
     }
+
+    return () => {
+      window.removeEventListener('mantra_audio_changed', handleCustom);
+    };
   }, []);
 
   // Save data to localStorage
@@ -241,9 +257,12 @@ export default function App() {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => setShowSettings(true)}
-          className={`p-3 rounded-full ${isDarkMode ? 'bg-zinc-900 text-zinc-400' : 'bg-white text-zinc-600'} shadow-lg`}
+          className={`p-3 rounded-full ${isDarkMode ? 'bg-zinc-900 text-zinc-400' : 'bg-white text-zinc-600'} shadow-lg relative`}
         >
           <Settings size={20} />
+          {hasMantra && (
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-teal-500 rounded-full border-2 border-zinc-950"></span>
+          )}
         </motion.button>
 
         <div className="flex gap-3">
@@ -287,8 +306,16 @@ export default function App() {
               
               {/* LCD Content */}
               <div className="absolute inset-0 flex flex-col items-end justify-center px-6 md:px-8 font-mono">
-                <div className={`text-xs md:text-sm font-bold uppercase tracking-tighter transition-colors duration-300 w-full text-right whitespace-nowrap mb-1 ${isBacklightOn ? 'text-emerald-950/60' : 'text-zinc-800/40'}`}>
-                  Count / Goal: {goal.toLocaleString()}
+                <div className="flex justify-between w-full items-center mb-1">
+                  {hasMantra && (
+                    <div className={`flex items-center gap-1 transition-opacity duration-300 ${isBacklightOn ? 'text-emerald-950/40' : 'text-zinc-800/20'}`}>
+                      <Volume2 size={10} />
+                      <span className="text-[8px] font-bold uppercase">Mantra</span>
+                    </div>
+                  )}
+                  <div className={`text-xs md:text-sm font-bold uppercase tracking-tighter transition-colors duration-300 text-right whitespace-nowrap ${isBacklightOn ? 'text-emerald-950/60' : 'text-zinc-800/40'}`}>
+                    Goal: {goal.toLocaleString()}
+                  </div>
                 </div>
                 <div className={`text-6xl md:text-7xl font-bold tracking-tighter leading-none transition-colors duration-300 w-full text-right whitespace-nowrap ${isBacklightOn ? 'text-emerald-950' : 'text-zinc-900'}`}>
                   {count}
@@ -300,8 +327,19 @@ export default function App() {
             </div>
           </div>
 
+          {/* Mantra Player on Front */}
+          {hasMantra && (
+            <div className={`w-[85%] md:w-[90%] mt-2 p-3 rounded-2xl ${isDarkMode ? 'bg-zinc-900/50' : 'bg-white/50'} backdrop-blur-md border border-white/10 shadow-inner z-10`}>
+              <AudioMantra 
+                isDarkMode={isDarkMode} 
+                showOnlyPlayer={true} 
+                onCycleComplete={handleIncrement} 
+              />
+            </div>
+          )}
+
           {/* Buttons Area */}
-          <div className="flex-1 w-full flex flex-col items-center justify-center gap-6 md:gap-8 pb-8">
+          <div className="flex-1 w-full flex flex-col items-center justify-center gap-4 md:gap-6 pb-6 min-h-0 relative z-10">
             
             {/* Main Count Button */}
             <motion.button
@@ -367,25 +405,25 @@ export default function App() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className={`w-full max-w-sm rounded-3xl p-8 ${isDarkMode ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'} shadow-2xl`}
+              className={`w-full max-w-sm rounded-3xl p-8 ${isDarkMode ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'} shadow-2xl max-h-[90vh] flex flex-col`}
             >
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-bold">Settings</h2>
                 <button onClick={() => setShowSettings(false)} className="opacity-50 hover:opacity-100">✕</button>
               </div>
 
-              <div className="space-y-6">
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
                 {/* Goal Setting */}
                 <div className="space-y-3">
                   <label className="text-xs font-bold uppercase tracking-widest opacity-50">Target Goal</label>
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {[33, 99, 100, 1000].map(g => (
+                    {[33, 99, 100, 1000, 1008, 10000, 100000, 1000000, 10000000, 100000000].map(g => (
                       <button
                         key={g}
                         onClick={() => setGoal(g)}
-                        className={`flex-1 min-w-[60px] py-2 rounded-xl text-sm font-medium transition-all ${goal === g ? 'bg-teal-600 text-white' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}
+                        className={`flex-1 min-w-[60px] py-2 rounded-xl text-xs font-medium transition-all ${goal === g ? 'bg-teal-600 text-white' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}
                       >
-                        {g >= 1000 ? `${g/1000}k` : g}
+                        {g >= 1000000 ? `${g/1000000}M` : g >= 1000 ? `${g/1000}k` : g}
                       </button>
                     ))}
                   </div>
@@ -479,6 +517,9 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Audio Mantra Section */}
+                <AudioMantra isDarkMode={isDarkMode} onAudioChange={setHasMantra} />
+
                 {/* Toggles */}
                 <div className="space-y-4 pt-4 border-t border-white/10">
                   <div className="flex justify-between items-center">
@@ -570,14 +611,55 @@ export default function App() {
                 )}
               </div>
 
-              <button
-                onClick={() => {
-                  if (confirm('Clear all history?')) setHistory([]);
-                }}
-                className="mt-6 text-xs font-bold uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity text-center"
-              >
-                Clear History
-              </button>
+              {history.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  {showClearHistoryConfirm ? (
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-center opacity-50">Clear all history?</p>
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={() => setShowClearHistoryConfirm(false)}
+                          className={`flex-1 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'bg-zinc-800' : 'bg-zinc-100'}`}
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setHistory([]);
+                            setShowClearHistoryConfirm(false);
+                          }}
+                          className="flex-1 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-red-500 text-white"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <button
+                        onClick={() => setShowClearHistoryConfirm(true)}
+                        className="w-full text-xs font-bold uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity text-center"
+                      >
+                        Clear History
+                      </button>
+                      <button
+                        onClick={() => setShowHistory(false)}
+                        className="w-full py-4 rounded-2xl font-bold uppercase tracking-widest bg-teal-600 text-white shadow-lg shadow-teal-500/20"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+              {history.length === 0 && (
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="w-full mt-8 py-4 rounded-2xl font-bold uppercase tracking-widest bg-teal-600 text-white shadow-lg shadow-teal-500/20"
+                >
+                  Done
+                </button>
+              )}
             </motion.div>
           </motion.div>
         )}

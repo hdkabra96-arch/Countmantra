@@ -1,5 +1,5 @@
 {
   "name": "Tasbih Digital",
   "description": "A beautiful and simple digital Tasbih counter for your daily dhikr.",
-  "requestFramePermissions": []
+  "requestFramePermissions": ["microphone"]
 }
