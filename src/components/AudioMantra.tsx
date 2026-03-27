@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mic, Square, Play, Pause, Timer, Repeat, Trash2, Volume2, VolumeX } from 'lucide-react';
+import { Mic, Square, Play, Pause, Timer, Repeat, Trash2, Volume2, VolumeX, Gauge } from 'lucide-react';
 
 interface AudioMantraProps {
   isDarkMode: boolean;
@@ -18,6 +18,7 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
   }, [audioUrl, onAudioChange]);
   const [targetRepetitions, setTargetRepetitions] = useState(108);
   const [currentRepetition, setCurrentRepetition] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [isLooping, setIsLooping] = useState(false);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -77,6 +78,12 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
     return () => audio.removeEventListener('ended', handleEnded);
   }, [isLooping, currentRepetition, targetRepetitions, onCycleComplete]);
 
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed, audioUrl]);
+
   const startRecording = async () => {
     setError(null);
     try {
@@ -127,6 +134,7 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
     setCurrentRepetition(0);
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
+      audioRef.current.playbackRate = playbackSpeed;
       audioRef.current.play();
     }
   };
@@ -275,6 +283,31 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
                 placeholder="Custom count..."
               />
             )}
+          </div>
+
+          {/* Speed Selector */}
+          <div className={`${showOnlyPlayer ? 'flex-1' : 'space-y-2'}`}>
+            {!showOnlyPlayer && (
+              <div className="flex items-center gap-2 opacity-50">
+                <Gauge size={14} />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Speed</span>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-1">
+              {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                <button
+                  key={speed}
+                  onClick={() => setPlaybackSpeed(speed)}
+                  className={`flex-1 min-w-[28px] py-1 rounded-lg text-[7px] font-bold transition-all ${
+                    playbackSpeed === speed
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400'
+                  }`}
+                >
+                  {speed}x
+                </button>
+              ))}
+            </div>
           </div>
           <audio ref={audioRef} src={audioUrl} />
         </div>
