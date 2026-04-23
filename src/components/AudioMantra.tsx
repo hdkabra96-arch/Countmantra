@@ -67,7 +67,9 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
         if (onCycleComplete) onCycleComplete();
 
         if (nextRep < targetRepetitions) {
-          audio.play();
+          timerRef.current = setTimeout(() => {
+            audio.play().catch(e => console.error("Error playing audio", e));
+          }, 750); // 0.75 second delay between repetitions
         } else {
           stopLoop();
         }
@@ -132,6 +134,10 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
     if (!audioUrl) return;
     setIsLooping(true);
     setCurrentRepetition(0);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.playbackRate = playbackSpeed;
@@ -142,6 +148,10 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
   const stopLoop = () => {
     setIsLooping(false);
     setCurrentRepetition(0);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -155,6 +165,15 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
     window.dispatchEvent(new Event('mantra_audio_changed'));
     setShowDeleteConfirm(false);
   };
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
