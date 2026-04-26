@@ -23,6 +23,7 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [permissionState, setPermissionState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -88,8 +89,15 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
 
   const startRecording = async () => {
     setError(null);
+    
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError('Recording is not supported in this browser.');
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setPermissionState('granted');
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -101,7 +109,7 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || 'audio/wav' });
         
         // Convert to base64 for storage
         const reader = new FileReader();
@@ -116,9 +124,16 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
 
       mediaRecorder.start();
       setIsRecording(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error accessing microphone:', err);
-      setError('Microphone access denied');
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setPermissionState('denied');
+        setError('Microphone access denied. Please enable it in your browser settings to record.');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setError('No microphone found on your device.');
+      } else {
+        setError('Could not access microphone. Please try again.');
+      }
     }
   };
 
@@ -199,8 +214,13 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
       )}
 
       {error && (
-        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-widest text-center">
-          {error}
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-center">{error}</p>
+          {permissionState === 'denied' && (
+            <p className="text-[9px] text-center opacity-70">
+              Go to your browser settings, find this site, and allow Microphone access.
+            </p>
+          )}
         </div>
       )}
 
@@ -224,7 +244,15 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
         </div>
       ) : !audioUrl ? (
         !showOnlyPlayer && (
-          <div className="flex flex-col items-center justify-center py-8 space-y-4">
+          <div className="flex flex-col items-center justify-center py-8 space-y-6">
+            <div className="text-center px-4">
+              <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-2">
+                Permission Request
+              </p>
+              <p className="text-[9px] opacity-60 uppercase tracking-tighter leading-tight max-w-[200px]">
+                When you tap record, your phone will ask to use the microphone. Please select <b>"Allow"</b> to continue.
+              </p>
+            </div>
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={isRecording ? stopRecording : startRecording}
