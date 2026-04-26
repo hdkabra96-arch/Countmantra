@@ -25,6 +25,19 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
   const [error, setError] = useState<string | null>(null);
   const [permissionState, setPermissionState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
 
+  useEffect(() => {
+    // Check permission status on mount
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'microphone' as PermissionName }).then((result) => {
+        setPermissionState(result.state as any);
+        result.onchange = () => {
+          setPermissionState(result.state as any);
+          if (result.state === 'granted') setError(null);
+        };
+      }).catch(err => console.log('Permissions API not supported or error:', err));
+    }
+  }, []);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -120,6 +133,9 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
           window.dispatchEvent(new Event('mantra_audio_changed'));
         };
         reader.readAsDataURL(audioBlob);
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorder.start();
@@ -128,11 +144,11 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
       console.error('Error accessing microphone:', err);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setPermissionState('denied');
-        setError('Microphone access denied. Please enable it in your browser settings to record.');
+        setError('Microphone access is required. Please tap "Allow" when the phone asks.');
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        setError('No microphone found on your device.');
+        setError('No microphone found.');
       } else {
-        setError('Could not access microphone. Please try again.');
+        setError('Permission required to record.');
       }
     }
   };
@@ -214,13 +230,8 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
       )}
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 space-y-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-center">{error}</p>
-          {permissionState === 'denied' && (
-            <p className="text-[9px] text-center opacity-70">
-              Go to your browser settings, find this site, and allow Microphone access.
-            </p>
-          )}
+        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-widest">{error}</p>
         </div>
       )}
 
@@ -244,15 +255,7 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
         </div>
       ) : !audioUrl ? (
         !showOnlyPlayer && (
-          <div className="flex flex-col items-center justify-center py-8 space-y-6">
-            <div className="text-center px-4">
-              <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-2">
-                Permission Request
-              </p>
-              <p className="text-[9px] opacity-60 uppercase tracking-tighter leading-tight max-w-[200px]">
-                When you tap record, your phone will ask to use the microphone. Please select <b>"Allow"</b> to continue.
-              </p>
-            </div>
+          <div className="flex flex-col items-center justify-center py-8 space-y-4">
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={isRecording ? stopRecording : startRecording}
