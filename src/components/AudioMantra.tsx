@@ -89,11 +89,11 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
   const startRecording = async () => {
     setError(null);
     
-    // Check for standard MediaDevices support
+    // 1. Basic Support Check
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       const isIframe = window.self !== window.top;
       if (isIframe) {
-        setError('Microphone access is restricted in preview. Please open the app in a "NEW TAB" to record.');
+        setError('Microphone access is restricted in preview. Please use the "OPEN IN NEW TAB" arrow in the top right.');
       } else {
         setError('Recording is not supported in this browser environment.');
       }
@@ -101,7 +101,7 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
     }
 
     try {
-      // Median/Native App Compatibility: Use standard constraints
+      // 2. Request Stream with mobile-optimized constraints
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -110,10 +110,7 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
         } 
       });
       
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
-      });
-      
+      const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -124,7 +121,7 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' });
         
         // Convert to base64 for persistent storage (Median compatible)
         const reader = new FileReader();
@@ -136,31 +133,31 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
         };
         reader.readAsDataURL(audioBlob);
         
-        // CRITICAL: Stop all tracks to release hardware for mobile apps
+        // 3. CRITICAL FOR MOBILE: Release microphone immediately
         stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err: any) {
-      console.error('Microphone Error Detail:', err);
+      console.error('Mic Access Error:', err);
       const errMsg = (err.message || '').toLowerCase();
       const errName = err.name || '';
       
-      // Detailed error mapping for better user guidance
+      // Detailed error mapping for mobile and native app environments
       if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errMsg.includes('denied') || errMsg.includes('dismissed') || errMsg.includes('permission')) {
         const isIframe = window.self !== window.top;
         if (isIframe) {
-          setError('Permission Blocked: AI Studio preview frames restrict mic usage. Use the "OPEN IN NEW TAB" arrow in the top-right corner.');
+          setError('PERMISSION BLOCKED: AI Studio preview frames restrict mic usage. Use the "OPEN IN NEW TAB" button.');
         } else {
-          setError('Microphone access was denied. Please allow microphone permissions in your site settings.');
+          setError('MICROPHONE DENIED: Please go to your browser/app settings and allow microphone access for this site.');
         }
       } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
-        setError('No microphone hardware detected.');
+        setError('NO MICROPHONE: No recording hardware detected on this device.');
       } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
-        setError('Microphone is already in use by another app.');
+        setError('MIC BUSY: Another app is using the microphone.');
       } else {
-        setError('Could not access microphone. If on mobile, ensure your app permissions are enabled.');
+        setError('MIC ERROR: Ensure permissions are granted in your device or app settings.');
       }
     }
   };
