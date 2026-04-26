@@ -90,7 +90,7 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
     setError(null);
     
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setError('Recording is not supported in this browser.');
+      setError('Recording is not supported in this environment. Try opening in a new tab.');
       return;
     }
 
@@ -131,13 +131,13 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
       const errName = err.name || '';
       
       if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errMsg.includes('denied') || errMsg.includes('dismissed') || errMsg.includes('permission')) {
-        setError('Microphone access is needed. Please click "Allow" when the prompt appears.');
+        setError('Microphone access blocked. Please open this app in a "New Tab" to allow microphone access.');
       } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
         setError('No microphone was found on this device.');
       } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
-        setError('Microphone is busy or not working. Check other apps.');
+        setError('Microphone is busy. Close other apps.');
       } else {
-        setError('Could not access microphone. Please try again.');
+        setError('Connection error. Try opening in a new tab.');
       }
     }
   };
@@ -219,8 +219,14 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
       )}
 
       {error && (
-        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-center">
+        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-center space-y-2">
           <p className="text-[10px] font-bold uppercase tracking-widest">{error}</p>
+          <button 
+            onClick={() => setError(null)}
+            className="text-[9px] underline uppercase tracking-widest opacity-70 hover:opacity-100"
+          >
+            Try Again
+          </button>
         </div>
       )}
 
