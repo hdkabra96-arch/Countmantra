@@ -23,20 +23,6 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [permissionState, setPermissionState] = useState<'prompt' | 'granted' | 'denied'>('prompt');
-
-  useEffect(() => {
-    // Check permission status on mount
-    if (navigator.permissions && navigator.permissions.query) {
-      navigator.permissions.query({ name: 'microphone' as PermissionName }).then((result) => {
-        setPermissionState(result.state as any);
-        result.onchange = () => {
-          setPermissionState(result.state as any);
-          if (result.state === 'granted') setError(null);
-        };
-      }).catch(err => console.log('Permissions API not supported or error:', err));
-    }
-  }, []);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -110,7 +96,6 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setPermissionState('granted');
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -141,17 +126,18 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err: any) {
-      console.error('Error accessing microphone:', err);
-      const errMsg = err.message || '';
+      console.error('Microphone Error:', err);
+      const errMsg = (err.message || '').toLowerCase();
       const errName = err.name || '';
       
-      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errMsg.includes('denied') || errMsg.includes('dismissed')) {
-        setPermissionState('denied');
-        setError('Microphone access is required. Please tap "Allow" when the phone asks.');
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errMsg.includes('denied') || errMsg.includes('dismissed') || errMsg.includes('permission')) {
+        setError('Microphone access is needed. Please click "Allow" when the prompt appears.');
       } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
-        setError('No microphone found.');
+        setError('No microphone was found on this device.');
+      } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
+        setError('Microphone is busy or not working. Check other apps.');
       } else {
-        setError('Microphone error. Please ensure permissions are granted.');
+        setError('Could not access microphone. Please try again.');
       }
     }
   };
