@@ -1,5 +1,5 @@
 {
-  "name": "Tasbih Digital",
-  "description": "A beautiful and simple digital Tasbih counter for your daily dhikr.",
+  "name": "CountMantra",
+  "description": "A powerful digital counter with voice mantra recording and playback capabilities.",
   "requestFramePermissions": ["microphone"]
 }

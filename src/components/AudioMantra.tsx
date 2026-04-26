@@ -89,14 +89,31 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
   const startRecording = async () => {
     setError(null);
     
+    // Check for standard MediaDevices support
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setError('Recording is not supported in this environment. Try opening in a new tab.');
+      const isIframe = window.self !== window.top;
+      if (isIframe) {
+        setError('Microphone access is restricted in preview. Please open the app in a "NEW TAB" to record.');
+      } else {
+        setError('Recording is not supported in this browser environment.');
+      }
       return;
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      // Median/Native App Compatibility: Use standard constraints
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+      });
+      
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -107,9 +124,9 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || 'audio/wav' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
         
-        // Convert to base64 for storage
+        // Convert to base64 for persistent storage (Median compatible)
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = reader.result as string;
@@ -119,25 +136,31 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
         };
         reader.readAsDataURL(audioBlob);
         
-        // Stop all tracks to release microphone
+        // CRITICAL: Stop all tracks to release hardware for mobile apps
         stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err: any) {
-      console.error('Microphone Error:', err);
+      console.error('Microphone Error Detail:', err);
       const errMsg = (err.message || '').toLowerCase();
       const errName = err.name || '';
       
+      // Detailed error mapping for better user guidance
       if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errMsg.includes('denied') || errMsg.includes('dismissed') || errMsg.includes('permission')) {
-        setError('Microphone access blocked. Please open this app in a "New Tab" to allow microphone access.');
+        const isIframe = window.self !== window.top;
+        if (isIframe) {
+          setError('Permission Blocked: AI Studio preview frames restrict mic usage. Use the "OPEN IN NEW TAB" arrow in the top-right corner.');
+        } else {
+          setError('Microphone access was denied. Please allow microphone permissions in your site settings.');
+        }
       } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
-        setError('No microphone was found on this device.');
+        setError('No microphone hardware detected.');
       } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
-        setError('Microphone is busy. Close other apps.');
+        setError('Microphone is already in use by another app.');
       } else {
-        setError('Connection error. Try opening in a new tab.');
+        setError('Could not access microphone. If on mobile, ensure your app permissions are enabled.');
       }
     }
   };
