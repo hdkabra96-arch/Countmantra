@@ -142,13 +142,16 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
       setIsRecording(true);
     } catch (err: any) {
       console.error('Error accessing microphone:', err);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      const errMsg = err.message || '';
+      const errName = err.name || '';
+      
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errMsg.includes('denied') || errMsg.includes('dismissed')) {
         setPermissionState('denied');
         setError('Microphone access is required. Please tap "Allow" when the phone asks.');
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
         setError('No microphone found.');
       } else {
-        setError('Permission required to record.');
+        setError('Microphone error. Please ensure permissions are granted.');
       }
     }
   };
