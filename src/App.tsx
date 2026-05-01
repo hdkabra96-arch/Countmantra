@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, Settings, History, Moon, Sun, Volume2, Vibrate, Lightbulb, Image as ImageIcon } from 'lucide-react';
+import { PrivacyPolicy } from './components/PrivacyPolicy';
 
 // Types
 type Theme = 'teal' | 'silver' | 'black' | 'gold';
@@ -36,6 +37,7 @@ export default function App() {
   const [isBacklightOn, setIsBacklightOn] = useState<boolean>(false);
   const [background, setBackground] = useState<string>('');
   const [mantraName, setMantraName] = useState<string>('');
+  const [showPrivacy, setShowPrivacy] = useState<boolean>(false);
 
   // Load data from localStorage
   useEffect(() => {
@@ -225,7 +227,7 @@ export default function App() {
   const currentTheme = deviceThemes[theme];
 
   return (
-    <div className={`min-h-screen ${!background ? (isDarkMode ? 'bg-zinc-950' : 'bg-zinc-100') : 'bg-black'} transition-colors duration-500 flex flex-col items-center justify-center p-4 font-sans overflow-hidden relative`}>
+    <div className={`min-h-screen ${!background ? (isDarkMode ? 'bg-zinc-950' : 'bg-zinc-100') : 'bg-black'} transition-colors duration-500 flex flex-col items-center pt-24 pb-12 px-4 font-sans overflow-y-auto relative`}>
       
       {/* Background Image Layer */}
       {background && (
@@ -639,6 +641,25 @@ export default function App() {
           border-radius: 10px;
         }
       `}</style>
+
+      {/* Privacy Policy Link */}
+      <button 
+        onClick={() => setShowPrivacy(true)}
+        className="mt-8 text-[10px] uppercase tracking-[0.2em] font-bold opacity-30 hover:opacity-100 transition-opacity pb-8"
+      >
+        Privacy Policy
+      </button>
+
+      {/* Full Screen Privacy Policy Page */}
+      <AnimatePresence>
+        {showPrivacy && (
+          <PrivacyPolicy 
+            isDarkMode={isDarkMode} 
+            background={background}
+            onBack={() => setShowPrivacy(false)} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
