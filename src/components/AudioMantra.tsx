@@ -150,7 +150,8 @@ export const AudioMantra: React.FC<AudioMantraProps> = ({ isDarkMode, onCycleCom
         if (isIframe) {
           setError('PERMISSION BLOCKED: AI Studio preview frames restrict mic usage. Use the "OPEN IN NEW TAB" button.');
         } else {
-          setError('MICROPHONE DENIED: Please go to your browser/app settings and allow microphone access for this site.');
+          // Disagree silently as per user request
+          console.log('Microphone access was denied or dismissed by user.');
         }
       } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
         setError('NO MICROPHONE: No recording hardware detected on this device.');
