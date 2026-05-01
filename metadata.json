@@ -1,5 +1,5 @@
 {
   "name": "CountMantra",
-  "description": "A powerful digital counter with voice mantra recording and playback capabilities.",
-  "requestFramePermissions": ["microphone"]
+  "description": "A powerful digital counter with customizable goals, themes, and background options.",
+  "requestFramePermissions": []
 }

@@ -6,7 +6,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, Settings, History, Moon, Sun, Volume2, Vibrate, Lightbulb, Image as ImageIcon } from 'lucide-react';
-import { AudioMantra } from './components/AudioMantra';
 
 // Types
 type Theme = 'teal' | 'silver' | 'black' | 'gold';
@@ -37,24 +36,15 @@ export default function App() {
   const [isBacklightOn, setIsBacklightOn] = useState<boolean>(false);
   const [background, setBackground] = useState<string>('');
   const [mantraName, setMantraName] = useState<string>('');
-  const [hasMantra, setHasMantra] = useState<boolean>(false);
 
   // Load data from localStorage
   useEffect(() => {
     const savedCount = localStorage.getItem('tasbih_count');
     const savedHistory = localStorage.getItem('tasbih_history');
     const savedSettings = localStorage.getItem('tasbih_settings');
-    const savedAudio = localStorage.getItem('mantra_audio');
 
     if (savedCount) setCount(parseInt(savedCount, 10));
     if (savedHistory) setHistory(JSON.parse(savedHistory));
-    if (savedAudio) setHasMantra(true);
-
-    const handleCustom = () => {
-      const audio = localStorage.getItem('mantra_audio');
-      setHasMantra(!!audio);
-    };
-    window.addEventListener('mantra_audio_changed', handleCustom);
 
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
@@ -65,10 +55,6 @@ export default function App() {
       setBackground(settings.background ?? '');
       setMantraName(settings.mantraName ?? '');
     }
-
-    return () => {
-      window.removeEventListener('mantra_audio_changed', handleCustom);
-    };
   }, []);
 
   // Save data to localStorage
@@ -260,9 +246,6 @@ export default function App() {
           className={`p-3 rounded-full ${isDarkMode ? 'bg-zinc-900 text-zinc-400' : 'bg-white text-zinc-600'} shadow-lg relative`}
         >
           <Settings size={20} />
-          {hasMantra && (
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-teal-500 rounded-full border-2 border-zinc-950"></span>
-          )}
         </motion.button>
 
         <div className="flex gap-3">
@@ -307,12 +290,6 @@ export default function App() {
               {/* LCD Content */}
               <div className="absolute inset-0 flex flex-col items-end justify-center px-6 md:px-8 font-mono">
                 <div className="flex justify-between w-full items-center mb-1">
-                  {hasMantra && (
-                    <div className={`flex items-center gap-1 transition-opacity duration-300 ${isBacklightOn ? 'text-emerald-950/40' : 'text-zinc-800/20'}`}>
-                      <Volume2 size={10} />
-                      <span className="text-[8px] font-bold uppercase">Mantra</span>
-                    </div>
-                  )}
                   <div className={`text-xs md:text-sm font-bold uppercase tracking-tighter transition-colors duration-300 text-right whitespace-nowrap ${isBacklightOn ? 'text-emerald-950/60' : 'text-zinc-800/40'}`}>
                     Goal: {goal.toLocaleString()}
                   </div>
@@ -326,18 +303,6 @@ export default function App() {
               <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
             </div>
           </div>
-
-          {/* Mantra Player on Front */}
-          {hasMantra && (
-            <div className={`w-[85%] md:w-[90%] mt-2 p-3 rounded-2xl ${isDarkMode ? 'bg-zinc-900/50' : 'bg-white/50'} backdrop-blur-md border border-white/10 shadow-inner z-10`}>
-              <AudioMantra 
-                isDarkMode={isDarkMode} 
-                showOnlyPlayer={true} 
-                onCycleComplete={handleIncrement} 
-              />
-            </div>
-          )}
-
           {/* Buttons Area */}
           <div className="flex-1 w-full flex flex-col items-center justify-center gap-4 md:gap-6 pb-6 min-h-0 relative z-10">
             
@@ -516,9 +481,6 @@ export default function App() {
                     </label>
                   </div>
                 </div>
-
-                {/* Audio Mantra Section */}
-                <AudioMantra isDarkMode={isDarkMode} onAudioChange={setHasMantra} />
 
                 {/* Toggles */}
                 <div className="space-y-4 pt-4 border-t border-white/10">
